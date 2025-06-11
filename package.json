@@ -9,9 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "ahooks": "^3.8.5",
+    "bignumber.js": "^9.3.0",
+    "dayjs": "^1.11.13",
+    "i18next": "^25.2.1",
+    "next": "15.3.3",
+    "next-i18next": "^15.4.2",
+    "notistack": "^3.0.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.3"
+    "react-i18next": "^15.5.2",
+    "sass": "^1.89.2"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -22,6 +30,23 @@
     "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "@eslint/eslintrc": "^3"
+    "@eslint/eslintrc": "^3",
+    "@commitlint/cli": "^17.6.7",
+    "@commitlint/config-conventional": "^17.6.7",
+    "@iconify/react": "^4.1.1",
+    "@tailwindcss/line-clamp": "^0.4.4",
+    "@tailwindcss/typography": "^0.5.9",
+    "@trivago/prettier-plugin-sort-imports": "^4.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.2.0",
+    "@typescript-eslint/parser": "^6.2.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^13.2.3",
+    "stylelint": "^15.10.2",
+    "stylelint-config-prettier": "^9.0.5",
+    "stylelint-config-recommended-scss": "^12.0.0",
+    "stylelint-config-standard": "^34.0.0",
+    "stylelint-order": "^6.0.3",
+    "prettier": "^3.0.0",
+    "prettier-plugin-tailwindcss": "^0.4.1"
   }
 }
