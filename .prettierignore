@@ -1,0 +1,7 @@
+node_modules/
+.eslintrc.js
+*.scss
+*.json
+site.webmanifest
+public/styles/
+public/static/
