@@ -1,45 +1,5 @@
 [English](./README.en.md) | [中文](./README.md) | [日本語](./README.jp.md)
 
-# TradingView Demo (Alltick)
-
-## 简介
-
-本项目是基于 Alltick 行情实现 TradingView Charting Library 的多市场行情演示，支持美股、港股、A股、外汇、贵金属、加密货币等多品种实时K线与分时图展示。
-
-## 特性
-
-- 多市场、多品种行情展示
-- 实时K线、分时图推送
-- 支持多分辨率切换（1min, 5min, 1D, 1W, 1M等）
-- 产品搜索与切换
-
-## 快速开始
-
-### 环境要求
-
-- Node.js 16+
-- npm 或 yarn
-
-### 安装依赖
-
-```bash
-npm install
-# 或
-yarn install
-```
-
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-```
-
 # AllTick TradingView 多市场行情开源演示
 
 ## 项目简介
