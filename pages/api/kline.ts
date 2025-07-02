@@ -1,9 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 import axios from 'axios'
-import dayjs from 'dayjs'
 
-import { guid } from '@/utils'
+import { guid } from '@/section/TradingChart/TVChartContainer/utils'
 
 // 映射类型到真实的远程K线接口
 const KLINE_API_MAP: Record<string, string> = {

@@ -78,13 +78,6 @@ export function convertToTVBar(item: {
     }
 }
 
-export function resolutionToMs(resolution: string): number {
-    if (resolution === '1D') return 24 * 60 * 60 * 1000
-    if (resolution === '1W') return 7 * 24 * 60 * 60 * 1000
-    const res = parseInt(resolution, 10)
-    return res * 60 * 1000 // 分钟级
-}
-
 export function alignTimeToResolution(timeMs: number, resolution: string): number {
     const timeSec = Math.floor(timeMs / 1000)
 
@@ -116,4 +109,12 @@ export function alignTimeToResolution(timeMs: number, resolution: string): numbe
 
     const alignedSec = Math.floor(timeSec / intervalSec) * intervalSec
     return alignedSec * 1000 // 转换为毫秒
+}
+
+export function guid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0
+        const v = c === 'x' ? r : (r & 0x3) | 0x8
+        return v.toString(16)
+    })
 }

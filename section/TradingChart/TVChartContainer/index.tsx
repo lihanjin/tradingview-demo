@@ -16,9 +16,8 @@ import type {
     ResolutionString,
 } from '@/public/static/charting_library'
 import { widget } from '@/public/static/charting_library'
-import { guid, isEmpty } from '@/utils'
 
-import { alignTimeToResolution, convertToTVBar, resolutionMap } from './utils'
+import { alignTimeToResolution, convertToTVBar, guid, resolutionMap } from './utils'
 
 // 用于管理订阅（listenerGuid -> { symbol, resolution, callback }）
 const subscriptions = new Map<
@@ -344,7 +343,7 @@ export const TVChartContainer = React.memo(() => {
 
                 // /** 搜索产品 */
                 searchSymbols(userInput: string, exchange: string, symbolType: string, onResult) {
-                    if (isEmpty(userInput)) return onResult(symbolList)
+                    if (!userInput) return onResult(symbolList)
                     onResult(
                         symbolList.filter((symbol) => {
                             return (
@@ -374,7 +373,7 @@ export const TVChartContainer = React.memo(() => {
             theme: 'dark',
             timezone,
         }
-        // eslint-disable-next-line new-cap
+
         chartWidgetRef.current = new widget(widgetOptions)
         if (chartWidgetRef.current) {
             chartWidgetRef.current.onChartReady(() => {
