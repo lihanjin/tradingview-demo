@@ -1,45 +1,5 @@
 [English](./README.en.md) | [中文](./README.md) | [日本語](./README.jp.md)
 
-# TradingView デモ（Alltick）
-
-## 概要
-
-本プロジェクトは、Alltick のマーケットデータを活用し、TradingView Charting Library をベースにしたマルチマーケットのチャート表示デモです。米国株、香港株、中国A株、為替、貴金属、暗号資産など、複数の金融商品のリアルタイムK線・分足チャートをサポートしています。
-
-## 特徴
-
-- マルチマーケット・マルチアセットのデータ表示
-- リアルタイムK線・分足データのプッシュ配信
-- 複数タイムフレームの切り替え対応（1分、5分、1日、1週、1ヶ月など）
-- 銘柄検索・切り替え機能
-
-## クイックスタート
-
-### 動作環境
-
-- Node.js 16以上
-- npm または yarn
-
-### 依存関係のインストール
-
-```bash
-npm install
-# または
-yarn install
-```
-
-これは [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app) を用いて初期化された [Next.js](https://nextjs.org) プロジェクトです。
-
-## 開発サーバーの起動
-
-```bash
-npm run dev
-# または
-yarn dev
-```
-
-ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスして動作を確認してください。
-
 # AllTick TradingView マルチマーケット チャートデモ（オープンソース）
 
 ## プロジェクト概要
