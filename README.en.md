@@ -1,4 +1,4 @@
-[中文版说明](./README.md)
+[English](./README.en.md) | [中文](./README.md)
 
 # TradingView Multi-Market Demo (AllTick)
 

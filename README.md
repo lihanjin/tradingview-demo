@@ -1,4 +1,4 @@
-[English Version](./README.en.md)
+[English](./README.en.md) | [中文](./README.md)
 
 # TradingView Demo (Alltick)
 
