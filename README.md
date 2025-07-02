@@ -1,3 +1,5 @@
+[English Version](./README.en.md)
+
 # TradingView Demo (Alltick)
 
 ## 简介
@@ -71,8 +73,8 @@ yarn install
 
 ### 配置 AllTick API Token
 
-1. 注册 AllTick 账号： https://www.alltick.com
-2. 登录后前往用户中心获取您的 API Token。
+1. 注册 AllTick 账号： https://www.alltick.co
+2. 登录后前往控制台获取您的 API Token。
 3. 打开项目根目录下的 .env 文件，将 API_TOKEN 设置为您的 Token：
     ```
     API_TOKEN=你的 AllTick Token
@@ -116,5 +118,5 @@ npm run start
 
 ## 官网与 API 文档
 
-- AllTick 官网： https://www.alltick.com
+- AllTick 官网： https://www.alltick.co
 - API 文档入口：登录后在用户中心查看
