@@ -1,111 +1,111 @@
 export interface Product {
-    /** 交易品种代码，如 "USDJPY"、"TSLA.US" */
+    /** Trading symbol code, e.g. "USDJPY", "TSLA.US" */
     symbol: string
 
-    /** 品种全称，如 "USD/JPY"、"Tesla Inc" */
+    /** Full name, e.g. "USD/JPY", "Tesla Inc" */
     full_name: string
 
-    /** 简要描述，如 "美元兑日元"、"特斯拉公司股票" */
+    /** Brief description, e.g. "US Dollar to Japanese Yen", "Tesla Inc Stock" */
     description: string
 
-    /** 行情显示用的 ticker，一般与 symbol 一致，部分交易所可能不同 */
+    /** Ticker for market data display, usually same as symbol, may differ for some exchanges */
     ticker: string
 
-    /** 类型，支持外汇、股票、加密货币、贵金属 */
+    /** Type, supports forex, stock, crypto, metal */
     type: 'us_stock' | 'hk_stock' | 'cn_stock' | 'forex' | 'crypto' | 'metal'
 
-    /** 交易所标识，如 "NASDAQ"、"BINANCE"、"FOREX" 等 */
+    /** Exchange identifier, e.g. "NASDAQ", "BINANCE", "FOREX" etc. */
     exchange: string
 }
 
 /**
- * K线历史数据请求参数
+ * K-line historical data request parameters
  * @see https://github.com/alltick/alltick-realtime-forex-crypto-stock-tick-finance-websocket-api/blob/main/http_interface/kline_query_cn.md#query%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0
  */
 export interface GetKlineParams {
-    /** 追踪码，用于日志追踪，请保证唯一（如：UUID、时间戳等） */
+    /** Trace code for log tracking, ensure uniqueness (e.g. UUID, timestamp, etc.) */
     trace: string
 
-    /** K线查询参数对象 */
+    /** K-line query parameter object */
     data: {
-        /** 品种代码（详见官方code列表，如 "BTCUSDT"、"AAPL.US"） */
+        /** Symbol code (see official code list, e.g. "BTCUSDT", "AAPL.US") */
         code: string
 
-        /** K线类型
-         * 1: 1分钟
-         * 2: 5分钟
-         * 3: 15分钟
-         * 4: 30分钟
-         * 5: 1小时
-         * 6: 2小时（股票不支持）
-         * 7: 4小时（股票不支持）
-         * 8: 日K
-         * 9: 周K
-         * 10: 月K
+        /** K-line type
+         * 1: 1 minute
+         * 2: 5 minutes
+         * 3: 15 minutes
+         * 4: 30 minutes
+         * 5: 1 hour
+         * 6: 2 hours (not supported for stocks)
+         * 7: 4 hours (not supported for stocks)
+         * 8: Daily
+         * 9: Weekly
+         * 10: Monthly
          */
         kline_type: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
 
-        /** 查询截止时间戳（秒）：
-         * - 0：表示从当前最新交易日往前查K线
-         * - >0：指定时间戳，往前查K线（仅外汇/贵金属/加密货币支持，股票不支持时间戳）
+        /** Query end timestamp (seconds):
+         * - 0: Query K-line from the latest trading day
+         * - >0: Specify timestamp to query K-line backward (only supported for forex/metal/crypto, not for stocks)
          */
         kline_timestamp_end: number
 
-        /** 查询K线数量，每次最多1000根（超限需循环查） */
+        /** Number of K-lines to query, up to 1000 per request (loop if exceeded) */
         query_kline_num: number
 
-        /** 复权类型，仅股票有效
-         * - 0：除权
-         * - 1：前复权
-         * - 默认仅支持0
+        /** Adjustment type, only valid for stocks
+         * - 0: Ex-right
+         * - 1: Forward adjustment
+         * - Only 0 is supported by default
          */
         adjust_type: 0 | 1
     }
 }
 
 /**
- * 单根K线数据结构
+ * Single K-line data structure
  */
 export interface KlineItem {
-    /** K线时间戳（秒），字符串格式 */
+    /** K-line timestamp (seconds), string format */
     timestamp: string
-    /** 开盘价，字符串格式 */
+    /** Open price, string format */
     open_price: string
-    /** 收盘价，字符串格式 */
+    /** Close price, string format */
     close_price: string
-    /** 最高价，字符串格式 */
+    /** High price, string format */
     high_price: string
-    /** 最低价，字符串格式 */
+    /** Low price, string format */
     low_price: string
-    /** 成交数量（成交量），字符串格式 */
+    /** Volume, string format */
     volume: string
-    /** 成交金额，字符串格式 */
+    /** Turnover, string format */
     turnover: string
 }
 
 /**
- * K线接口返回的 data 字段结构
+ * Data field structure returned by K-line API
  */
 export interface KlineResponseData {
-    /** 品种代码 */
+    /** Symbol code */
     code: string
-    /** K线类型，参见kline_type说明 */
+    /** K-line type, see kline_type description */
     kline_type: number
-    /** K线列表 */
+    /** K-line list */
     kline_list: KlineItem[]
 }
 
 /**
- * K线接口完整响应结构
+ * Complete response structure of K-line API
  * @see https://github.com/alltick/alltick-realtime-forex-crypto-stock-tick-finance-websocket-api/blob/main/http_interface/kline_query_cn.md#%E8%BF%94%E5%9B%9E%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84
  */
 export interface KlineApiResponse {
-    /** 状态码，0为成功，其它为失败 */
+    /** Status code, 0 for success, others for failure */
     ret: number
-    /** 提示信息 */
+    /** Message */
     msg: string
-    /** 追踪码，回显请求 trace */
+    /** Trace code, echo request trace */
     trace: string
-    /** 数据对象 */
+    /** Data object */
     data: KlineResponseData
 }

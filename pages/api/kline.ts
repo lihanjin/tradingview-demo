@@ -4,7 +4,7 @@ import axios from 'axios'
 
 import { guid } from '@/section/TradingChart/TVChartContainer/utils'
 
-// 映射类型到真实的远程K线接口
+// Map types to the actual remote K-line API
 const KLINE_API_MAP: Record<string, string> = {
     stock: 'https://quote.alltick.io/quote-stock-b-api/kline',
     other: 'https://quote.alltick.io/quote-b-api/kline',
@@ -18,7 +18,7 @@ function getApiUrl(type: string): string {
 }
 
 /**
- * 获取历史K线数据
+ * Get historical K-line data
  * @see https://github.com/alltick/alltick-realtime-forex-crypto-stock-tick-finance-websocket-api/blob/main/http_interface/kline_query_cn.md
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -19,7 +19,7 @@ import { widget } from '@/public/static/charting_library'
 
 import { alignTimeToResolution, convertToTVBar, guid, resolutionMap } from './utils'
 
-// 用于管理订阅（listenerGuid -> { symbol, resolution, callback }）
+// Used to manage subscriptions (listenerGuid -> { symbol, resolution, callback })
 const subscriptions = new Map<
     string,
     {
@@ -35,7 +35,7 @@ export const TVChartContainer = React.memo(() => {
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone as CustomTimezones
 
-    // 当前选中的产品
+    // Currently selected product
     const [currentSymbolInfo, setCurrentSymbolInfo] = useState<Product>(() => {
         if (typeof window !== 'undefined') {
             const cached = localStorage.getItem('currentSymbolInfo')
@@ -43,22 +43,22 @@ export const TVChartContainer = React.memo(() => {
         }
         return symbolList[0]
     })
-    // 心跳定时器引用
+    // Heartbeat timer reference
     const pingIntervalRef = useRef<NodeJS.Timeout | null>(null)
-    // 上次收到心跳响应的时间戳
+    // Timestamp of the last heartbeat response
     const lastPongTimeRef = useRef<number>(0)
-    // 心跳包序列号
+    // Heartbeat packet sequence number
     const seqRef = useRef(1)
-    // 已经请求过历史K线数据的股票
+    // Stocks that have already requested historical K-line data
     const stockGetBarsRequestedRef = useRef(new Set<string>())
-    // 最后一条数据
+    // Last bar data
     const lastBarsRef = useRef<Map<string, Bar>>(new Map())
 
     const resolutions = ['1', '5', '15', '30', '60', '120', '240', '1D', '1W', '1M'] as ResolutionString[]
 
     const getWsUrlByProductType = (type: string) => {
         const stockTypes = ['us_stock', 'hk_stock', 'cn_stock']
-        // 股票和外汇链接不一样
+        // Stock and forex have different websocket URLs
         if (stockTypes.includes(type)) {
             return 'wss://quote.alltick.io/quote-stock-b-ws-api?token=' + process.env.API_TOKEN
         }
@@ -71,10 +71,9 @@ export const TVChartContainer = React.memo(() => {
         share: true,
         shouldReconnect: () => true,
         onOpen: () => {
-            console.log('连接成功')
-            // 连接成功后开始发送心跳
+            // Start heartbeat after connection is established
             startHeartbeat()
-            // 重新发送当前订阅数据
+            // Resend current subscription data
             sendJsonMessage({
                 cmd_id: 22004,
                 seq_id: seqRef.current++,
@@ -86,31 +85,31 @@ export const TVChartContainer = React.memo(() => {
         },
         onMessage: (message) => {
             try {
-                // 1️⃣ 解析 WebSocket 推送的数据
+                // 1️⃣ Parse WebSocket pushed data
                 const parsed = JSON.parse(message.data)
                 const tickData = parsed.data
-                if (!tickData) return // 数据无效直接返回
+                if (!tickData) return // Return directly if data is invalid
 
-                // 2️⃣ 提取并格式化 tick 数据
+                // 2️⃣ Extract and format tick data
                 const symbol = tickData.code
-                const timeMs = Number(tickData.tick_time) // 毫秒时间戳
+                const timeMs = Number(tickData.tick_time) // Millisecond timestamp
                 const priceNum = Number(tickData.price)
                 const volumeNum = Number(tickData.volume)
 
-                // 3️⃣ 获取当前图表分辨率，计算该 tick 所属的 K 线时间段
+                // 3️⃣ Get current chart resolution and calculate the K-line period the tick belongs to
                 const currentResolution = chartWidgetRef.current?.activeChart().resolution()
                 const barTime = alignTimeToResolution(timeMs, currentResolution || '1')
 
-                // 4️⃣ 获取上一次缓存的 bar，判断 tick 是否乱序
+                // 4️⃣ Get the last cached bar and determine if the tick is out of order
                 const prevBar = lastBarsRef.current.get(symbol)
                 if (prevBar && barTime < prevBar.time) {
-                    // 跳过乱序或回退的 tick，避免 TradingView 时间倒序报错
+                    // Skip out-of-order or rollback ticks to avoid TradingView time reversal errors
                     return
                 }
 
                 let newBar: Bar
                 if (prevBar && prevBar.time === barTime) {
-                    // 🔁 同一时间段内，更新当前 bar（高、低、收盘、成交量）
+                    // 🔁 In the same period, update the current bar (high, low, close, volume)
                     newBar = {
                         ...prevBar,
                         high: Math.max(prevBar.high, priceNum),
@@ -119,7 +118,7 @@ export const TVChartContainer = React.memo(() => {
                         volume: (prevBar.volume ?? 0) + volumeNum,
                     }
                 } else {
-                    // 🆕 新时间段，创建新 bar
+                    // 🆕 New period, create a new bar
                     newBar = {
                         time: barTime,
                         open: priceNum,
@@ -130,31 +129,31 @@ export const TVChartContainer = React.memo(() => {
                     }
                 }
 
-                // 5️⃣ 更新缓存
+                // 5️⃣ Update cache
                 lastBarsRef.current.set(symbol, newBar)
 
-                // 6️⃣ 通知所有订阅了该 symbol 的订阅者，调用 onTick 回调更新图表
+                // 6️⃣ Notify all subscribers of the symbol and call onTick callback to update the chart
                 subscriptions.forEach(({ symbolInfo, onTick }) => {
                     if (symbolInfo.ticker === symbol && typeof onTick === 'function') {
-                        onTick(newBar) // 📤 推送新 bar 数据到 TradingView widget
+                        onTick(newBar) // 📤 Push new bar data to TradingView widget
                     }
                 })
             } catch (e) {
-                // 捕获解析或处理异常，避免影响主流程
-                console.error('[TV] 解析 tick 数据失败', e)
+                // Catch parsing or processing exceptions to avoid affecting the main process
+                console.error('[TV] Failed to parse tick data', e)
             }
         },
     })
 
-    // 开始心跳检测
+    // Start heartbeat detection
     const startHeartbeat = () => {
-        // 先清除可能存在的旧定时器
+        // Clear any existing old timer first
         stopHeartbeat()
 
-        // 设置当前时间为最后一次 PONG 时间
+        // Set the current time as the last PONG time
         lastPongTimeRef.current = Date.now()
 
-        // 连接成功后立即发送一次心跳消息
+        // Send a heartbeat message immediately after connection is established
         sendJsonMessage({
             cmd_id: 22000,
             seq_id: seqRef.current++,
@@ -162,19 +161,19 @@ export const TVChartContainer = React.memo(() => {
             data: {},
         })
 
-        // 创建新的定时器，每分钟发送一次 PING
+        // Create a new timer to send PING every minute
         pingIntervalRef.current = setInterval(() => {
-            // 发送 PING 消息
+            // Send PING message
             sendJsonMessage({
                 cmd_id: 22000,
                 seq_id: seqRef.current++,
                 trace: guid(),
                 data: {},
             })
-        }, 10 * 1000) // 每分钟执行一次
+        }, 10 * 1000) // Execute every minute
     }
 
-    // 停止心跳检测
+    // Stop heartbeat detection
     const stopHeartbeat = () => {
         if (pingIntervalRef.current) {
             clearInterval(pingIntervalRef.current)
@@ -192,12 +191,12 @@ export const TVChartContainer = React.memo(() => {
                 onReady: (onReadyCallback) => {
                     setTimeout(() => onReadyCallback(config), 0)
                 },
-                /** 获取历史数据，即当前时刻之前的数据 */
+                /** Get historical data, i.e., data before the current moment */
                 async getBars(symbolInfo, resolution, periodParams, onResult) {
                     const isStock = symbolInfo.type.includes('stock')
                     const key = `${symbolInfo.ticker}_${resolution}`
 
-                    // 股票产品只请求一次
+                    // Stock products only request once
                     if (isStock && stockGetBarsRequestedRef.current.has(key)) {
                         onResult([], { noData: true })
                         return
@@ -212,7 +211,7 @@ export const TVChartContainer = React.memo(() => {
                                 query_kline_num: 1000,
                                 adjust_type: 0,
                                 ...(isStock
-                                    ? {} // 股票不传 kline_timestamp_end
+                                    ? {} // Stocks do not pass kline_timestamp_end
                                     : {
                                           kline_timestamp_end: periodParams?.firstDataRequest ? 0 : periodParams?.to,
                                       }),
@@ -228,19 +227,18 @@ export const TVChartContainer = React.memo(() => {
 
                         const bars = klineList.map(convertToTVBar)
 
-                        // 标记：已经请求过该股票的 getBars
+                        // Mark: getBars has already been requested for this stock
                         if (isStock) {
                             stockGetBarsRequestedRef.current.add(key)
                         }
 
                         onResult(bars)
                     } catch (error) {
-                        console.error('🚀 ~ getBars 请求异常:', error)
-                        onResult([], { noData: true }) // 防止死循环
+                        onResult([], { noData: true })
                     }
                 },
                 /**
-                 * 选择产品信息
+                 * Select product information
                  */
                 async resolveSymbol(symbolId, onResolve, onError) {
                     try {
@@ -293,7 +291,7 @@ export const TVChartContainer = React.memo(() => {
                             pricescale,
                             minmov: 1,
                             ticker: product.ticker,
-                            // 股票不支持2小时K、4小时K
+                            // Stocks do not support 2-hour and 4-hour K-lines
                             supported_resolutions: resolutions.filter((r) => !isStock || (r !== '120' && r !== '240')),
                             has_intraday: true,
                             intraday_multipliers: ['1', '5', '15', '30', '60', '120', '240'],
@@ -310,7 +308,7 @@ export const TVChartContainer = React.memo(() => {
                 },
 
                 /**
-                 * 订阅 K 线数据的,实时数据
+                 * Subscribe to K-line data, real-time data
                  */
                 subscribeBars(symbolInfo, resolution, onTick, listenerGuid) {
                     subscriptions.set(listenerGuid, { symbolInfo, resolution, onTick })
@@ -341,7 +339,7 @@ export const TVChartContainer = React.memo(() => {
                     subscriptions.delete(listenerGuid)
                 },
 
-                // /** 搜索产品 */
+                // /** Search products */
                 searchSymbols(userInput: string, exchange: string, symbolType: string, onResult) {
                     if (!userInput) return onResult(symbolList)
                     onResult(
