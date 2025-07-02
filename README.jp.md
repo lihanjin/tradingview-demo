@@ -80,5 +80,3 @@ npm run start
 
 - AllTick 公式サイト：[https://www.alltick.co](https://www.alltick.co)
 - API ドキュメント：ログイン後、ユーザーセンターから確認可能
-
----
