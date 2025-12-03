@@ -98,6 +98,14 @@ export const symbolList: Product[] = [
         exchange: 'AllTick',
     },
     {
+        symbol: 'IXIC',
+        full_name: 'NASDAQ Composite Index',
+        description: '纳斯达克综合指数',
+        ticker: '.IXIC.US',
+        type: 'us_stock',
+        exchange: 'AllTick',
+    },
+    {
         symbol: '939',
         full_name: 'China Construction Bank',
         description: '中国建设银行',
