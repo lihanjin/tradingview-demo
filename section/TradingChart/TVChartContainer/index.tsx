@@ -15,7 +15,7 @@ import type {
     LibrarySymbolInfo,
     ResolutionString,
 } from '@/public/static/charting_library'
-import { widget } from '@/public/static/charting_library'
+import { widget } from '@/public/static/charting_library/charting_library.esm.js'
 
 import { alignTimeToResolution, convertToTVBar, guid, resolutionMap } from './utils'
 
