@@ -50,6 +50,14 @@ export const symbolList: Product[] = [
         exchange: 'AllTick',
     },
     {
+        symbol: 'USOIL',
+        full_name: 'WTI',
+        description: 'WTI原油',
+        ticker: 'USOIL',
+        type: 'metal',
+        exchange: 'AllTick',
+    },
+    {
         symbol: 'NGAS',
         full_name: 'GAS',
         description: '天然气',
