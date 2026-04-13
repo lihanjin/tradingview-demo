@@ -14,7 +14,6 @@ const eslintConfig = [
     ...compat.extends('next/core-web-vitals', 'next/typescript'),
     {
         // 关闭document不能加载css
-        '@next/next/no-css-tags': 'off',
         'no-new-native-nonconstructor': 'off',
         '@typescript-eslint/no-unused-vars': 'warn',
         // 关闭禁止直接使用类型断言
