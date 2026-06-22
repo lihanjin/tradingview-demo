@@ -18,6 +18,38 @@ export interface Product {
     exchange: string
 }
 
+export interface OrderBookLevel {
+    price: string
+    volume?: string
+}
+
+export interface OrderBookData {
+    code: string
+    bids: OrderBookLevel[]
+    asks: OrderBookLevel[]
+    tick_time?: string
+}
+
+export interface TradeData {
+    code: string
+    seq?: string
+    tick_time: string
+    price: string
+    volume?: string
+    turnover?: string
+    /** 0: default, 1: buy, 2: sell */
+    trade_direction?: 0 | 1 | 2
+}
+
+export interface DepthApiResponse {
+    ret: number
+    msg: string
+    trace: string
+    data: {
+        tick_list: OrderBookData[]
+    }
+}
+
 /**
  * K-line historical data request parameters
  * @see https://github.com/alltick/alltick-realtime-forex-crypto-stock-tick-finance-websocket-api/blob/main/http_interface/kline_query_cn.md#query%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0

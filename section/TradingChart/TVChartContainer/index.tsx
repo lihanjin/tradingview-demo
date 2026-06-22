@@ -4,7 +4,7 @@ import useWebSocket from 'react-use-websocket'
 
 import axios from 'axios'
 
-import { KlineApiResponse, Product } from '@/@types/global'
+import { DepthApiResponse, KlineApiResponse, OrderBookData, Product, TradeData } from '@/@types/global'
 import { symbolList } from '@/config/symbols'
 import type {
     Bar,
@@ -18,6 +18,7 @@ import type {
 import { widget } from '@/public/static/charting_library/charting_library.esm.js'
 
 import { alignTimeToResolution, convertToTVBar, guid, resolutionMap } from './utils'
+import { MarketDepthPanel } from './MarketDepthPanel'
 
 // Used to manage subscriptions (listenerGuid -> { symbol, resolution, callback })
 const subscriptions = new Map<
@@ -29,20 +30,46 @@ const subscriptions = new Map<
     }
 >()
 
+const MAX_TRADES = 60
+
+type PriceDirection = 'up' | 'down' | 'flat'
+
+function getDepthLevel(type: Product['type']): number {
+    switch (type) {
+        case 'hk_stock':
+            return 10
+        case 'cn_stock':
+        case 'crypto':
+            return 5
+        default:
+            return 1
+    }
+}
+
+function getUnits(symbol: string) {
+    if (symbol.includes('/')) {
+        const [base, quote] = symbol.split('/')
+        return { baseUnit: base, quoteUnit: quote }
+    }
+
+    return { baseUnit: symbol, quoteUnit: '' }
+}
+
+function isTradeData(data: unknown): data is TradeData {
+    if (!data || typeof data !== 'object') return false
+    const item = data as Partial<TradeData>
+    return typeof item.code === 'string' && typeof item.price === 'string' && typeof item.tick_time === 'string'
+}
+
 export const TVChartContainer = React.memo(() => {
     const chartWidgetRef = useRef<IChartingLibraryWidget>(null)
     const chartContainerRef = useRef<HTMLDivElement>(null) as React.MutableRefObject<HTMLInputElement>
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone as CustomTimezones
+    const locale = 'zh'
 
     // Currently selected product
-    const [currentSymbolInfo, setCurrentSymbolInfo] = useState<Product>(() => {
-        if (typeof window !== 'undefined') {
-            const cached = localStorage.getItem('currentSymbolInfo')
-            return cached ? JSON.parse(cached) : symbolList[0]
-        }
-        return symbolList[0]
-    })
+    const [currentSymbolInfo, setCurrentSymbolInfo] = useState<Product>(symbolList[0])
     // Heartbeat timer reference
     const pingIntervalRef = useRef<NodeJS.Timeout | null>(null)
     // Timestamp of the last heartbeat response
@@ -53,6 +80,11 @@ export const TVChartContainer = React.memo(() => {
     const stockGetBarsRequestedRef = useRef(new Set<string>())
     // Last bar data
     const lastBarsRef = useRef<Map<string, Bar>>(new Map())
+    const [orderBook, setOrderBook] = useState<OrderBookData>()
+    const [trades, setTrades] = useState<TradeData[]>([])
+    const [lastPrice, setLastPrice] = useState<number>()
+    const [lastPriceDirection, setLastPriceDirection] = useState<PriceDirection>('flat')
+    const lastPriceRef = useRef<number | undefined>(undefined)
 
     const resolutions = ['1', '5', '15', '30', '60', '120', '240', '1D', '1W', '1M'] as ResolutionString[]
 
@@ -67,6 +99,18 @@ export const TVChartContainer = React.memo(() => {
 
     const wsUrl = getWsUrlByProductType(currentSymbolInfo?.type)
 
+    const subscribeRealtimeQuotes = (product: Product) => {
+        // Realtime transaction / tick data, also used to update K-line bars.
+        sendJsonMessage({
+            cmd_id: 22004,
+            seq_id: seqRef.current++,
+            trace: guid(),
+            data: {
+                symbol_list: [{ code: product.ticker }],
+            },
+        })
+    }
+
     const { sendJsonMessage } = useWebSocket(wsUrl, {
         share: true,
         shouldReconnect: () => true,
@@ -74,14 +118,7 @@ export const TVChartContainer = React.memo(() => {
             // Start heartbeat after connection is established
             startHeartbeat()
             // Resend current subscription data
-            sendJsonMessage({
-                cmd_id: 22004,
-                seq_id: seqRef.current++,
-                trace: guid(),
-                data: {
-                    symbol_list: [{ code: currentSymbolInfo.ticker }],
-                },
-            })
+            subscribeRealtimeQuotes(currentSymbolInfo)
         },
         onMessage: (message) => {
             try {
@@ -90,11 +127,24 @@ export const TVChartContainer = React.memo(() => {
                 const tickData = parsed.data
                 if (!tickData) return // Return directly if data is invalid
 
+                if (!isTradeData(tickData)) return
+
                 // 2️⃣ Extract and format tick data
                 const symbol = tickData.code
-                const timeMs = Number(tickData.tick_time) // Millisecond timestamp
+                const rawTime = Number(tickData.tick_time)
+                const timeMs = rawTime > 1000000000000 ? rawTime : rawTime * 1000
                 const priceNum = Number(tickData.price)
-                const volumeNum = Number(tickData.volume)
+                const volumeNum = Number(tickData.volume || 0)
+
+                if (!Number.isFinite(timeMs) || !Number.isFinite(priceNum)) return
+
+                const prevPrice = lastPriceRef.current
+                if (prevPrice !== undefined) {
+                    setLastPriceDirection(priceNum > prevPrice ? 'up' : priceNum < prevPrice ? 'down' : 'flat')
+                }
+                lastPriceRef.current = priceNum
+                setLastPrice(priceNum)
+                setTrades((prev) => [tickData, ...prev].slice(0, MAX_TRADES))
 
                 // 3️⃣ Get current chart resolution and calculate the K-line period the tick belongs to
                 const currentResolution = chartWidgetRef.current?.activeChart().resolution()
@@ -180,6 +230,38 @@ export const TVChartContainer = React.memo(() => {
             pingIntervalRef.current = null
         }
     }
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function fetchOrderBook() {
+            try {
+                const result = await axios.get<DepthApiResponse>('/api/depth', {
+                    params: {
+                        code: currentSymbolInfo.ticker,
+                        type: currentSymbolInfo.type,
+                        depth_level: getDepthLevel(currentSymbolInfo.type),
+                    },
+                })
+                const nextOrderBook = result.data.data?.tick_list?.[0]
+                if (!cancelled && nextOrderBook) {
+                    setOrderBook(nextOrderBook)
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setOrderBook(undefined)
+                }
+            }
+        }
+
+        fetchOrderBook()
+        const timer = setInterval(fetchOrderBook, 1000)
+
+        return () => {
+            cancelled = true
+            clearInterval(timer)
+        }
+    }, [currentSymbolInfo])
 
     useEffect(() => {
         const config: DatafeedConfiguration = {
@@ -299,6 +381,11 @@ export const TVChartContainer = React.memo(() => {
                         }
 
                         setCurrentSymbolInfo(product)
+                        setOrderBook(undefined)
+                        setTrades([])
+                        setLastPrice(undefined)
+                        setLastPriceDirection('flat')
+                        lastPriceRef.current = undefined
                         localStorage.setItem('currentSymbolInfo', JSON.stringify(product))
 
                         Promise.resolve().then(() => onResolve(symbolInfo))
@@ -313,14 +400,10 @@ export const TVChartContainer = React.memo(() => {
                 subscribeBars(symbolInfo, resolution, onTick, listenerGuid) {
                     subscriptions.set(listenerGuid, { symbolInfo, resolution, onTick })
 
-                    sendJsonMessage({
-                        cmd_id: 22004,
-                        seq_id: seqRef.current++,
-                        trace: guid(),
-                        data: {
-                            symbol_list: [{ code: symbolInfo.ticker }],
-                        },
-                    })
+                    const product = symbolList.find((item) => item.ticker === symbolInfo.ticker)
+                    if (product) {
+                        subscribeRealtimeQuotes(product)
+                    }
                 },
 
                 unsubscribeBars(listenerGuid: string) {
@@ -358,7 +441,7 @@ export const TVChartContainer = React.memo(() => {
                     : ('1' as ResolutionString),
             container: chartContainerRef.current,
             library_path: '/static/charting_library/',
-            locale: 'zh',
+            locale,
             // https://tradingview.gitee.io/featuresets/
             disabled_features: ['header_compare', 'symbol_search_hot_key', 'symbol_info', 'go_to_date'],
             enabled_features: ['study_templates'],
@@ -386,5 +469,35 @@ export const TVChartContainer = React.memo(() => {
         }
     }, [])
 
-    return <div className="h-full w-full" ref={chartContainerRef} />
+    const { baseUnit, quoteUnit } = getUnits(currentSymbolInfo.symbol)
+
+    return (
+        <div className="tv-chart-with-depth">
+            <div className="tv-chart-area" ref={chartContainerRef} />
+            <MarketDepthPanel
+                orderBook={orderBook}
+                trades={trades}
+                lastPrice={lastPrice}
+                lastPriceDirection={lastPriceDirection}
+                quoteUnit={quoteUnit}
+                baseUnit={baseUnit}
+                locale={locale}
+            />
+
+            <style jsx>{`
+                .tv-chart-with-depth {
+                    display: flex;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                    background: #131722;
+                }
+
+                .tv-chart-area {
+                    min-width: 0;
+                    flex: 1 1 auto;
+                }
+            `}</style>
+        </div>
+    )
 })
