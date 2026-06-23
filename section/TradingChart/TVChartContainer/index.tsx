@@ -58,7 +58,13 @@ function getUnits(symbol: string) {
 function isTradeData(data: unknown): data is TradeData {
     if (!data || typeof data !== 'object') return false
     const item = data as Partial<TradeData>
-    return typeof item.code === 'string' && typeof item.price === 'string' && typeof item.tick_time === 'string'
+    // AllTick 推送的 tick_time 实际是 number（毫秒时间戳），不是 string，
+    // 同时兼容两种类型，避免所有品种的实时 tick 被误判丢弃。
+    return (
+        typeof item.code === 'string' &&
+        typeof item.price === 'string' &&
+        (typeof item.tick_time === 'string' || typeof item.tick_time === 'number')
+    )
 }
 
 export const TVChartContainer = React.memo(() => {

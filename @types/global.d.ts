@@ -32,11 +32,12 @@ export interface OrderBookData {
 
 export interface TradeData {
     code: string
-    seq?: string
-    tick_time: string
+    // AllTick 实际推送 seq / tick_time 为 number，但兼容历史 string 形式
+    seq?: string | number
+    tick_time: string | number
     price: string
     volume?: string
-    turnover?: string
+    turnover?: string;
     /** 0: default, 1: buy, 2: sell */
     trade_direction?: 0 | 1 | 2
 }

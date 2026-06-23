@@ -77,7 +77,7 @@ function formatTotal(value: number): string {
     return value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
 }
 
-function formatTime(tickTime: string): string {
+function formatTime(tickTime: string | number): string {
     const raw = Number(tickTime)
     if (!Number.isFinite(raw)) return '--'
     const ms = raw > 1000000000000 ? raw : raw * 1000
