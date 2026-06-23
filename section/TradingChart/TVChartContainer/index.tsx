@@ -89,7 +89,7 @@ export const TVChartContainer = React.memo(() => {
     const resolutions = ['1', '5', '15', '30', '60', '120', '240', '1D', '1W', '1M'] as ResolutionString[]
 
     const getWsUrlByProductType = (type: string) => {
-        const stockTypes = ['us_stock', 'hk_stock', 'cn_stock']
+        const stockTypes = ['us_stock', 'hk_stock', 'cn_stock', 'index']
         // Stock and forex have different websocket URLs
         if (stockTypes.includes(type)) {
             return 'wss://quote.alltick.io/quote-stock-b-ws-api?token=' + process.env.API_TOKEN
@@ -347,6 +347,10 @@ export const TVChartContainer = React.memo(() => {
                                 session = '0930-1130,1300-1500'
                                 timezone = 'Asia/Shanghai'
                                 break
+                            case 'index':
+                                session = '24x7'
+                                timezone = 'Etc/UTC'
+                                break
                             case 'forex':
                             case 'metal':
                                 pricescale = 100000
@@ -359,7 +363,7 @@ export const TVChartContainer = React.memo(() => {
                                 timezone = 'Etc/UTC'
                                 break
                         }
-                        const isStock = product.type === 'us_stock' || product.type === 'hk_stock' || product.type === 'cn_stock'
+                        const isStock = product.type === 'us_stock' || product.type === 'hk_stock' || product.type === 'cn_stock' || product.type === 'index'
 
                         const symbolInfo = {
                             name: product.symbol,
