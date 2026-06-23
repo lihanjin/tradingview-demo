@@ -13,7 +13,7 @@ const KLINE_API_MAP: Record<string, string> = {
 type ApiErrorPayload = string | Record<string, unknown> | unknown[]
 
 function getApiUrl(type: string): string {
-    if (type === 'us_stock' || type === 'hk_stock' || type === 'cn_stock') {
+    if (type === 'us_stock' || type === 'hk_stock' || type === 'cn_stock' || type === 'index') {
         return KLINE_API_MAP.stock
     }
     return KLINE_API_MAP.other

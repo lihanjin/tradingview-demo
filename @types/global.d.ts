@@ -11,8 +11,8 @@ export interface Product {
     /** Ticker for market data display, usually same as symbol, may differ for some exchanges */
     ticker: string
 
-    /** Type, supports forex, stock, crypto, metal */
-    type: 'us_stock' | 'hk_stock' | 'cn_stock' | 'forex' | 'crypto' | 'metal'
+    /** Type, supports forex, stock, crypto, metal, index */
+    type: 'us_stock' | 'hk_stock' | 'cn_stock' | 'forex' | 'crypto' | 'metal' | 'index'
 
     /** Exchange identifier, e.g. "NASDAQ", "BINANCE", "FOREX" etc. */
     exchange: string
