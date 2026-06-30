@@ -5,6 +5,7 @@ import useWebSocket from 'react-use-websocket'
 import axios from 'axios'
 
 import { DepthApiResponse, KlineApiResponse, OrderBookData, Product, TradeData } from '@/@types/global'
+import { getAllTickWsApiBaseUrl, isAllTickStockMarket } from '@/config/alltickMarket'
 import { symbolList } from '@/config/symbols'
 import type {
     Bar,
@@ -17,8 +18,9 @@ import type {
 } from '@/public/static/charting_library'
 import { widget } from '@/public/static/charting_library/charting_library.esm.js'
 
-import { alignTimeToResolution, convertToTVBar, guid, resolutionMap } from './utils'
 import { MarketDepthPanel } from './MarketDepthPanel'
+import { getInitialSymbolInfo, persistCurrentSymbolInfo } from './symbolStorage'
+import { alignTimeToResolution, convertToTVBar, getChartResolution, guid, resolutionMap } from './utils'
 
 // Used to manage subscriptions (listenerGuid -> { symbol, resolution, callback })
 const subscriptions = new Map<
@@ -75,7 +77,7 @@ export const TVChartContainer = React.memo(() => {
     const locale = 'zh'
 
     // Currently selected product
-    const [currentSymbolInfo, setCurrentSymbolInfo] = useState<Product>(symbolList[0])
+    const [currentSymbolInfo, setCurrentSymbolInfo] = useState<Product>(() => getInitialSymbolInfo())
     // Heartbeat timer reference
     const pingIntervalRef = useRef<NodeJS.Timeout | null>(null)
     // Timestamp of the last heartbeat response
@@ -95,12 +97,7 @@ export const TVChartContainer = React.memo(() => {
     const resolutions = ['1', '5', '15', '30', '60', '120', '240', '1D', '1W', '1M'] as ResolutionString[]
 
     const getWsUrlByProductType = (type: string) => {
-        const stockTypes = ['us_stock', 'hk_stock', 'cn_stock', 'index']
-        // Stock and forex have different websocket URLs
-        if (stockTypes.includes(type)) {
-            return 'wss://quote.alltick.io/quote-stock-b-ws-api?token=' + process.env.API_TOKEN
-        }
-        return 'wss://quote.alltick.io/quote-b-ws-api?token=' + process.env.API_TOKEN
+        return `${getAllTickWsApiBaseUrl(type)}?token=${process.env.API_TOKEN}`
     }
 
     const wsUrl = getWsUrlByProductType(currentSymbolInfo?.type)
@@ -153,7 +150,7 @@ export const TVChartContainer = React.memo(() => {
                 setTrades((prev) => [tickData, ...prev].slice(0, MAX_TRADES))
 
                 // 3️⃣ Get current chart resolution and calculate the K-line period the tick belongs to
-                const currentResolution = chartWidgetRef.current?.activeChart().resolution()
+                const currentResolution = getChartResolution(chartWidgetRef.current)
                 const barTime = alignTimeToResolution(timeMs, currentResolution || '1')
 
                 // 4️⃣ Get the last cached bar and determine if the tick is out of order
@@ -369,7 +366,7 @@ export const TVChartContainer = React.memo(() => {
                                 timezone = 'Etc/UTC'
                                 break
                         }
-                        const isStock = product.type === 'us_stock' || product.type === 'hk_stock' || product.type === 'cn_stock' || product.type === 'index'
+                        const isStock = isAllTickStockMarket(product.type)
 
                         const symbolInfo = {
                             name: product.symbol,
@@ -396,7 +393,7 @@ export const TVChartContainer = React.memo(() => {
                         setLastPrice(undefined)
                         setLastPriceDirection('flat')
                         lastPriceRef.current = undefined
-                        localStorage.setItem('currentSymbolInfo', JSON.stringify(product))
+                        persistCurrentSymbolInfo(product)
 
                         Promise.resolve().then(() => onResolve(symbolInfo))
                     } catch (e) {

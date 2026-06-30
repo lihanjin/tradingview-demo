@@ -2,20 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 
 import axios from 'axios'
 
+import { getAllTickHttpApiBaseUrl } from '@/config/alltickMarket'
 import { guid } from '@/section/TradingChart/TVChartContainer/utils'
-
-const DEPTH_API_MAP: Record<string, string> = {
-    stock: 'https://quote.alltick.io/quote-stock-b-api/depth-tick',
-    other: 'https://quote.alltick.io/quote-b-api/depth-tick',
-}
 
 type ApiErrorPayload = string | Record<string, unknown> | unknown[]
 
 function getApiUrl(type: string): string {
-    if (type === 'us_stock' || type === 'hk_stock' || type === 'cn_stock' || type === 'index') {
-        return DEPTH_API_MAP.stock
-    }
-    return DEPTH_API_MAP.other
+    return `${getAllTickHttpApiBaseUrl(type)}/depth-tick`
 }
 
 function getErrorPayload(error: unknown): ApiErrorPayload {

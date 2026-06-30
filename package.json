@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
-        "test": "node scripts/verify-symbol-codes.mjs",
+        "test": "node scripts/verify-symbol-codes.mjs && node scripts/verify-symbol-storage.mjs && node scripts/verify-chart-runtime-guards.mjs && node scripts/verify-alltick-market-routing.mjs",
         "build": "next build",
         "start": "next start",
         "lint": "next lint"

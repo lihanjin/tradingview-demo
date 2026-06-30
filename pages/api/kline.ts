@@ -2,21 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 
 import axios from 'axios'
 
+import { getAllTickHttpApiBaseUrl } from '@/config/alltickMarket'
 import { guid } from '@/section/TradingChart/TVChartContainer/utils'
-
-// Map types to the actual remote K-line API
-const KLINE_API_MAP: Record<string, string> = {
-    stock: 'https://quote.alltick.io/quote-stock-b-api/kline',
-    other: 'https://quote.alltick.io/quote-b-api/kline',
-}
 
 type ApiErrorPayload = string | Record<string, unknown> | unknown[]
 
 function getApiUrl(type: string): string {
-    if (type === 'us_stock' || type === 'hk_stock' || type === 'cn_stock' || type === 'index') {
-        return KLINE_API_MAP.stock
-    }
-    return KLINE_API_MAP.other
+    return `${getAllTickHttpApiBaseUrl(type)}/kline`
 }
 
 function getErrorPayload(error: unknown): ApiErrorPayload {

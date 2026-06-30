@@ -1,6 +1,8 @@
 import dayjs from 'dayjs'
 
-import { Bar } from '@/public/static/charting_library/charting_library'
+import type { Bar, IChartingLibraryWidget } from '@/public/static/charting_library/charting_library'
+
+type ChartResolutionWidget = Pick<IChartingLibraryWidget, 'activeChart'>
 
 /**
  * 计算到下一个更新k线的时间要多少秒
@@ -109,6 +111,16 @@ export function alignTimeToResolution(timeMs: number, resolution: string): numbe
 
     const alignedSec = Math.floor(timeSec / intervalSec) * intervalSec
     return alignedSec * 1000 // 转换为毫秒
+}
+
+export function getChartResolution(chartWidget: ChartResolutionWidget | null | undefined): string {
+    try {
+        const resolution = chartWidget?.activeChart?.()?.resolution?.()
+
+        return typeof resolution === 'string' && resolution ? resolution : '1'
+    } catch {
+        return '1'
+    }
 }
 
 export function guid() {
