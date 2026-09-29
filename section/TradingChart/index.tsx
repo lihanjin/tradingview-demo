@@ -7,7 +7,7 @@ import { TVChartContainer } from './TVChartContainer'
 export default function TradingChart() {
     return (
         <>
-            <Script src="/static/datafeeds/udf/dist/bundle.js" strategy="lazyOnload" />
+            <Script src="/chart/static/datafeeds/udf/dist/bundle.js" strategy="lazyOnload" />
             <TVChartContainer />
         </>
     )

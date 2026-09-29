@@ -15,6 +15,7 @@ import type {
     IChartingLibraryWidget,
     LibrarySymbolInfo,
     ResolutionString,
+    SubscribeBarsCallback,
 } from '@/public/static/charting_library'
 import { widget } from '@/public/static/charting_library/charting_library.esm.js'
 
@@ -28,11 +29,15 @@ const subscriptions = new Map<
     {
         symbolInfo: LibrarySymbolInfo
         resolution: string
-        onTick: (bar: any) => void
+        onTick: SubscribeBarsCallback
     }
 >()
 
 const MAX_TRADES = 60
+// 右侧面板按 100 毫秒合并推送，降低高频成交时的 React 渲染次数。
+const PANEL_UPDATE_INTERVAL_MS = 100
+// 盘口请求完成后再等待一秒，避免接口耗时接近一秒时请求重叠。
+const ORDER_BOOK_POLL_INTERVAL_MS = 1000
 
 type PriceDirection = 'up' | 'down' | 'flat'
 
@@ -93,6 +98,13 @@ export const TVChartContainer = React.memo(() => {
     const [lastPrice, setLastPrice] = useState<number>()
     const [lastPriceDirection, setLastPriceDirection] = useState<PriceDirection>('flat')
     const lastPriceRef = useRef<number | undefined>(undefined)
+    const pendingTradesRef = useRef<TradeData[]>([])
+    const panelUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const pendingPriceDirectionRef = useRef<PriceDirection>('flat')
+
+    useEffect(() => () => {
+        if (panelUpdateTimerRef.current) clearTimeout(panelUpdateTimerRef.current)
+    }, [])
 
     const resolutions = ['1', '5', '15', '30', '60', '120', '240', '1D', '1W', '1M'] as ResolutionString[]
 
@@ -134,6 +146,7 @@ export const TVChartContainer = React.memo(() => {
 
                 // 2️⃣ Extract and format tick data
                 const symbol = tickData.code
+                if (symbol !== currentSymbolInfo.ticker) return
                 const rawTime = Number(tickData.tick_time)
                 const timeMs = rawTime > 1000000000000 ? rawTime : rawTime * 1000
                 const priceNum = Number(tickData.price)
@@ -143,11 +156,20 @@ export const TVChartContainer = React.memo(() => {
 
                 const prevPrice = lastPriceRef.current
                 if (prevPrice !== undefined) {
-                    setLastPriceDirection(priceNum > prevPrice ? 'up' : priceNum < prevPrice ? 'down' : 'flat')
+                    pendingPriceDirectionRef.current = priceNum > prevPrice ? 'up' : priceNum < prevPrice ? 'down' : 'flat'
                 }
                 lastPriceRef.current = priceNum
-                setLastPrice(priceNum)
-                setTrades((prev) => [tickData, ...prev].slice(0, MAX_TRADES))
+                pendingTradesRef.current.push(tickData)
+                if (!panelUpdateTimerRef.current) {
+                    panelUpdateTimerRef.current = setTimeout(() => {
+                        panelUpdateTimerRef.current = null
+                        const pendingTrades = pendingTradesRef.current
+                        pendingTradesRef.current = []
+                        setLastPrice(lastPriceRef.current)
+                        setLastPriceDirection(pendingPriceDirectionRef.current)
+                        setTrades((prev) => [...pendingTrades.reverse(), ...prev].slice(0, MAX_TRADES))
+                    }, PANEL_UPDATE_INTERVAL_MS)
+                }
 
                 // 3️⃣ Get current chart resolution and calculate the K-line period the tick belongs to
                 const currentResolution = getChartResolution(chartWidgetRef.current)
@@ -236,10 +258,13 @@ export const TVChartContainer = React.memo(() => {
 
     useEffect(() => {
         let cancelled = false
+        let timer: ReturnType<typeof setTimeout> | null = null
+        const controller = new AbortController()
 
         async function fetchOrderBook() {
             try {
-                const result = await axios.get<DepthApiResponse>('/api/depth', {
+                const result = await axios.get<DepthApiResponse>('/chart/api/depth', {
+                    signal: controller.signal,
                     params: {
                         code: currentSymbolInfo.ticker,
                         type: currentSymbolInfo.type,
@@ -250,19 +275,21 @@ export const TVChartContainer = React.memo(() => {
                 if (!cancelled && nextOrderBook) {
                     setOrderBook(nextOrderBook)
                 }
-            } catch (error) {
+            } catch {
                 if (!cancelled) {
                     setOrderBook(undefined)
                 }
+            } finally {
+                if (!cancelled) timer = setTimeout(fetchOrderBook, ORDER_BOOK_POLL_INTERVAL_MS)
             }
         }
 
         fetchOrderBook()
-        const timer = setInterval(fetchOrderBook, 1000)
 
         return () => {
             cancelled = true
-            clearInterval(timer)
+            controller.abort()
+            if (timer) clearTimeout(timer)
         }
     }, [currentSymbolInfo])
 
@@ -288,7 +315,7 @@ export const TVChartContainer = React.memo(() => {
                     }
 
                     try {
-                        const result = await axios.get<KlineApiResponse>('/api/kline', {
+                        const result = await axios.get<KlineApiResponse>('/chart/api/kline', {
                             params: {
                                 code: symbolInfo.ticker,
                                 type: symbolInfo.type,
@@ -393,6 +420,10 @@ export const TVChartContainer = React.memo(() => {
                         setLastPrice(undefined)
                         setLastPriceDirection('flat')
                         lastPriceRef.current = undefined
+                        pendingPriceDirectionRef.current = 'flat'
+                        pendingTradesRef.current = []
+                        if (panelUpdateTimerRef.current) clearTimeout(panelUpdateTimerRef.current)
+                        panelUpdateTimerRef.current = null
                         persistCurrentSymbolInfo(product)
 
                         Promise.resolve().then(() => onResolve(symbolInfo))
@@ -447,7 +478,7 @@ export const TVChartContainer = React.memo(() => {
                     ? (localStorage.getItem('chartInterval') as ResolutionString)
                     : ('1' as ResolutionString),
             container: chartContainerRef.current,
-            library_path: '/static/charting_library/',
+            library_path: '/chart/static/charting_library/',
             locale,
             // https://tradingview.gitee.io/featuresets/
             disabled_features: ['header_compare', 'symbol_search_hot_key', 'symbol_info', 'go_to_date'],
@@ -508,3 +539,5 @@ export const TVChartContainer = React.memo(() => {
         </div>
     )
 })
+
+TVChartContainer.displayName = 'TVChartContainer'
