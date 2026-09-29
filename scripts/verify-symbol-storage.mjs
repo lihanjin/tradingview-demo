@@ -50,7 +50,7 @@ function createStorage(initialValues = {}) {
 }
 
 const { symbolList } = loadTsModule('config/symbols.ts')
-const { CURRENT_SYMBOL_INFO_STORAGE_KEY, getInitialSymbolInfo, persistCurrentSymbolInfo } = loadTsModule(
+const { CURRENT_SYMBOL_INFO_STORAGE_KEY, findLinkedSymbolInfo, getInitialSymbolInfo, persistCurrentSymbolInfo } = loadTsModule(
     'section/TradingChart/TVChartContainer/symbolStorage.ts',
     {
         '@/config/symbols': { symbolList },
@@ -73,6 +73,13 @@ const aluminum = getInitialSymbolInfo(aluminumStorage)
 
 assert.equal(aluminum.symbol, 'XALUSD', 'refresh should restore the previously selected display symbol')
 assert.equal(aluminum.ticker, 'Aluminum', 'refresh should use the latest AllTick ticker for restored symbols')
+
+for (const ticker of ['USDJPY', 'GOLD', 'USOIL', 'HK50', 'BTCUSDT', '.DJI.US', 'TSLA.US', '700.HK', '000001.SH', '399001.SZ']) {
+    const linked = getInitialSymbolInfo(aluminumStorage, ticker)
+    assert.equal(linked.ticker, ticker, `linked ${ticker} should override the previous selection`)
+    assert.equal(findLinkedSymbolInfo(ticker)?.ticker, ticker, `linked ${ticker} must exist in the chart catalog`)
+}
+assert.equal(getInitialSymbolInfo(aluminumStorage, 'UNKNOWN').ticker, 'Aluminum', 'invalid links should use saved selection')
 
 const invalidStorage = createStorage({
     [CURRENT_SYMBOL_INFO_STORAGE_KEY]: '{bad json',

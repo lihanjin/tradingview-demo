@@ -23,7 +23,18 @@ function findSymbolInfo(storedValue: unknown): Product | undefined {
     })
 }
 
-export function getInitialSymbolInfo(storage: SymbolStorage | null = getBrowserStorage()): Product {
+/** 从图表入口参数中匹配受支持的代码；未知值不能进入 TradingView 数据源。 */
+export function findLinkedSymbolInfo(symbol: string | null): Product | undefined {
+    if (!symbol) return undefined
+    return symbolList.find((item) => item.ticker === symbol || item.symbol === symbol)
+}
+
+export function getInitialSymbolInfo(
+    storage: SymbolStorage | null = getBrowserStorage(),
+    linkedSymbol: string | null = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('symbol'),
+): Product {
+    const linkedProduct = findLinkedSymbolInfo(linkedSymbol)
+    if (linkedProduct) return linkedProduct
     if (!storage) return symbolList[0]
 
     try {
