@@ -80,6 +80,12 @@ for (const ticker of ['USDJPY', 'GOLD', 'USOIL', 'HK50', 'BTCUSDT', '.DJI.US', '
     assert.equal(findLinkedSymbolInfo(ticker)?.ticker, ticker, `linked ${ticker} must exist in the chart catalog`)
 }
 assert.equal(getInitialSymbolInfo(aluminumStorage, 'UNKNOWN').ticker, 'Aluminum', 'invalid links should use saved selection')
+assert.equal(getInitialSymbolInfo(aluminumStorage, 'BTCUSDT', '/chart/ETHUSDT').ticker, 'ETHUSDT', 'path symbol should override the query parameter')
+assert.equal(getInitialSymbolInfo(aluminumStorage, null, '/chart/000001.SH').ticker, '000001.SH', 'stock codes should work in path links')
+assert.equal(getInitialSymbolInfo(aluminumStorage, null, '/chart/ETHUSDT/').ticker, 'ETHUSDT', 'trailing slash should retain the path symbol')
+assert.equal(getInitialSymbolInfo(aluminumStorage, '000001.SH', '/chart').ticker, '000001.SH', 'query links should keep working on the base chart route')
+assert.equal(getInitialSymbolInfo(aluminumStorage, '000001.SH', '/').ticker, '000001.SH', 'legacy root query links should keep working')
+assert.equal(getInitialSymbolInfo(aluminumStorage, 'BTCUSDT', '/chart/UNKNOWN').ticker, 'Aluminum', 'invalid path symbols should retain the existing fallback')
 
 const invalidStorage = createStorage({
     [CURRENT_SYMBOL_INFO_STORAGE_KEY]: '{bad json',
