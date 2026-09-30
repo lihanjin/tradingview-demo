@@ -535,6 +535,20 @@ export const TVChartContainer = React.memo(() => {
                     min-width: 0;
                     flex: 1 1 auto;
                 }
+
+                @media (max-width: 767px) {
+                    .tv-chart-with-depth {
+                        flex-direction: column;
+                        overflow-x: hidden;
+                        overflow-y: auto;
+                    }
+
+                    .tv-chart-area {
+                        width: 100%;
+                        height: max(360px, 58dvh);
+                        flex: none;
+                    }
+                }
             `}</style>
         </div>
     )

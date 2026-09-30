@@ -204,6 +204,17 @@ export function MarketDepthPanel({
                     overflow: hidden;
                 }
 
+                @media (max-width: 767px) {
+                    .market-depth-panel {
+                        width: 100%;
+                        min-width: 0;
+                        height: 520px;
+                        flex: none;
+                        border-top: 1px solid #2a2e39;
+                        border-left: 0;
+                    }
+                }
+
                 .panel-section {
                     min-height: 0;
                     display: flex;
